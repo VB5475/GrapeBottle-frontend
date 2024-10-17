@@ -7,7 +7,8 @@ import "./App.css"
 // import Form from './components/Form';
 
 const App = () => {
-    const [activeTab, setActiveTab] = useState('form');
+    const [activeTab, setActiveTab] = useState('grid');
+    const [globalFormData, setGlobalFormData] = useState({})
 
     const handleTabChange = (tab) => {
         setActiveTab(tab);
@@ -37,9 +38,9 @@ const App = () => {
 
             <div className="p-4">
                 {activeTab === 'form' ? (
-                    <Form />
+                    <Form globalFormData={globalFormData} />
                 ) : (
-                    <Grid />
+                    <Grid setActiveTab={setActiveTab} setGlobalFormData={setGlobalFormData} />
                 )}
             </div>
         </div >

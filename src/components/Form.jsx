@@ -4,7 +4,10 @@ import { nanoid } from 'nanoid'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const Form = () => {
+const Form = ({ globalFormData }) => {
+    const [isEdit, setIsEdit] = useState(false)
+
+
     const [formData, setFormData] = useState({
         item: '',
         vintage: '',
@@ -29,6 +32,19 @@ const Form = () => {
     const [uploadedUrls, setUploadedUrls] = useState([]);  // Stores Cloudinary URLs
     const [isUploading, setIsUploading] = useState(false); // Track upload process
     const [isSubmitEnabled, setIsSubmitEnabled] = useState(false); // Track submit button state
+    const [editTimePhotos, setEditTimePhotos] = useState([])
+
+    useEffect(() => {
+        if (globalFormData && Object.keys(globalFormData).length > 0) {
+            if (globalFormData?.photos?.length > 0) setIsSubmitEnabled(true)
+            setEditTimePhotos([...globalFormData.photos])
+            setImagePreviews(globalFormData.photos)
+            setFormData({ ...globalFormData, photos: [] })
+
+            setIsEdit(true)
+        }
+    }, [globalFormData])
+
     const gsheetApiUrl = process.env.REACT_APP_GSHEET_API_URL;
     const dataBaseApiUrl = process.env.REACT_APP_GSHEET_API_URL;
     const backendApiUrl = process.env.REACT_APP_GSHEET_API_URL;
@@ -53,6 +69,9 @@ const Form = () => {
     // Handle file input (multiple image uploads)
     const handleImageUpload = (event) => {
         const files = Array.from(event.target.files);
+        console.log("image files are here")
+        console.log(formData.photos)
+        console.log(files)
         const newImagePreviews = files.map(file => URL.createObjectURL(file));
 
         setFormData(prev => ({
@@ -66,6 +85,8 @@ const Form = () => {
     // Handle image upload to the backend
     const handleUploadImages = async () => {
         try {
+            console.log("ahi jo")
+            console.log(formData)
             setIsUploading(true);
             const urls = [];
             for (const photo of formData.photos) {
@@ -75,6 +96,9 @@ const Form = () => {
                 const response = await axios.post("https://wineapp-backend.onrender.com/upload", formDataToUpload, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
+                // const response = await axios.post("http://localhost:4000/upload", formDataToUpload, {
+                //     headers: { 'Content-Type': 'multipart/form-data' },
+                // });
 
                 if (response.data.url) {
                     urls.push(response.data.url);  // Store Cloudinary URL
@@ -132,7 +156,7 @@ const Form = () => {
         console.log(uniqueID)
         const updatedFormData = {
             ...formData,
-            photos: uploadedUrls, // Use Cloudinary URLs
+            photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
         };
         console.log("Form data with Cloudinary URLs:", updatedFormData);
         await test()
@@ -142,15 +166,19 @@ const Form = () => {
             const stringForm = JSON.stringify(updatedFormData)
             console.log("string form")
             console.log(stringForm)
+            console.log("isediting")
+
+            console.log(isEdit ? "Update" : "Insert")
 
             await fetch(dataBaseApiUrl, {
                 // headers: {
                 //     "Content-Type": "application/json" // Fixed the capitalization
                 // },
+
                 method: "POST",
                 body: JSON.stringify({ // Convert the body to a JSON string
-                    Mode: "Insert",
-                    id: uniqueID,
+                    Mode: isEdit ? "Update" : "Insert",
+                    id: isEdit ? formData.id : uniqueID,
                     itemData: stringForm
                 })
             }).then(res => {
@@ -158,7 +186,10 @@ const Form = () => {
             }).then(newres => { // Added another then to handle the resolved promise
                 console.log(newres);
                 toast.success('Form submitted successfully!');
-            }).catch(e => toast.error("data base error"));
+            }).catch(e => {
+                console.log(e.message)
+                toast.error("data base error")
+            });
 
 
 
