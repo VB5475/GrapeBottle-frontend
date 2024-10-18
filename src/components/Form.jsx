@@ -113,12 +113,12 @@ const Form = ({ globalFormData, setActiveTab }) => {
                 const formDataToUpload = new FormData();
                 formDataToUpload.append('image', photo); // Append each image to the FormData
 
-                // const response = await axios.post("https://wineapp-backend.onrender.com/upload", formDataToUpload, {
-                //     headers: { 'Content-Type': 'multipart/form-data' },
-                // });
-                const response = await axios.post("http://localhost:4000/upload", formDataToUpload, {
+                const response = await axios.post("https://grapebottle-backend.onrender.com/upload", formDataToUpload, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
+                // const response = await axios.post("http://localhost:4000/upload", formDataToUpload, {
+                //     headers: { 'Content-Type': 'multipart/form-data' },
+                // });
 
                 if (response.data.urls) {
                     urls.push(response.data.urls.cloudinaryURL);  // Store Cloudinary URL
