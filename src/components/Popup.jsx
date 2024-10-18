@@ -107,6 +107,10 @@ const Popup = ({ item, onClose }) => {
                                 <td className="bg-white border border-gray-200 py-3 px-4 font-semibold text-center">Last Trade</td>
                                 <td className="bg-gray-50 border border-gray-200 py-3 px-4 text-center">{item.lastTrade}</td>
                             </tr>
+                            <tr>
+                                <td className="bg-white border border-gray-200 py-3 px-4 font-semibold text-center">Barcode</td>
+                                <td className="bg-gray-50 border border-gray-200 py-3 px-4 text-center">{item.barcode}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

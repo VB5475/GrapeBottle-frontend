@@ -3,33 +3,38 @@ import axios from 'axios';
 import { nanoid } from 'nanoid'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import BarcodeScanner from '../BarcodeScanner/BarcodeScanner';
+// import BarcodeScanner from '../BarcodeScanner/BarcodeScanner';
+import BarcodeScanner from '../BarcodeScanner/BarcodeScanner2';
 
-const Form = ({ globalFormData }) => {
+const defaulFormData = {
+    id: nanoid(),
+    item: '',
+    vintage: '',
+    size: '',
+    qty: '',
+    packaging: '',
+    condition: '',
+    label: '',
+    capsulesCorks: '',
+    tempHumidity: '',
+    bottleFillLevel: '',
+    provenance: '',
+    tastingNotes: '',
+    lwin: '',
+    boxId: '',
+    marketValue: '',
+    lastTrade: '',
+    photos: [],
+    gDrivePhotos: [],
+    barcode: '',
+}
+
+
+const Form = ({ globalFormData, setActiveTab }) => {
     const [isEdit, setIsEdit] = useState(false)
+    const [isScanning, setIsScanning] = useState(false);
 
-
-    const [formData, setFormData] = useState({
-        item: '',
-        vintage: '',
-        size: '',
-        qty: '',
-        packaging: '',
-        condition: '',
-        label: '',
-        capsulesCorks: '',
-        tempHumidity: '',
-        bottleFillLevel: '',
-        provenance: '',
-        tastingNotes: '',
-        lwin: '',
-        boxId: '',
-        marketValue: '',
-        lastTrade: '',
-        photos: [],  // File objects
-        gDrivePhotos: [],
-        barcode: '', // Add a field for the barcode
-    });
+    const [formData, setFormData] = useState(defaulFormData);
 
     const [imagePreviews, setImagePreviews] = useState([]);
     const [uploadedUrls, setUploadedUrls] = useState([]);  // Stores Cloudinary URLs
@@ -56,6 +61,7 @@ const Form = ({ globalFormData }) => {
     const backendApiUrl = process.env.REACT_APP_GSHEET_API_URL;
     console.log(gsheetApiUrl)
     useEffect(() => {
+        console.log("formdata is here ")
         console.log(formData);
     }, [formData]);
 
@@ -74,9 +80,11 @@ const Form = ({ globalFormData }) => {
 
     // barcode scan handler
     const handleBarcodeScan = (barcode) => {
-        setFormData((prev) => ({ ...prev, barcode })); // Update the form data with the scanned barcode
+        setFormData((prev) => ({ ...prev, barcode: barcode })); // Update the form data with the scanned barcode
     };
-
+    const handleBarcodeChange = (e) => {
+        setFormData((prev) => ({ ...prev, barcode: e.target.value })); // Allow user to edit the barcode
+    };
     // Handle file input (multiple image uploads)
     const handleImageUpload = (event) => {
         const files = Array.from(event.target.files);
@@ -173,9 +181,9 @@ const Form = ({ globalFormData }) => {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const uniqueID = nanoid()
-        console.log("id is here ")
-        console.log(uniqueID)
+        // const uniqueID = nanoid()
+        // console.log("id is here ")
+        // console.log(uniqueID)
         const updatedFormData = {
             ...formData,
             photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
@@ -201,7 +209,7 @@ const Form = ({ globalFormData }) => {
                 method: "POST",
                 body: JSON.stringify({ // Convert the body to a JSON string
                     Mode: isEdit ? "Update" : "Insert",
-                    id: isEdit ? `${formData.id}` : uniqueID,
+                    id: `${formData.id}`,
                     itemData: stringForm
                 })
             }).then(res => {
@@ -209,6 +217,9 @@ const Form = ({ globalFormData }) => {
             }).then(newres => { // Added another then to handle the resolved promise
                 console.log(newres);
                 toast.success('Form submitted successfully!');
+                setFormData(defaulFormData)
+                setImagePreviews([])
+                setIsSubmitEnabled(false)
             }).catch(e => {
                 console.log(e.message)
                 toast.error("data base error")
@@ -216,22 +227,24 @@ const Form = ({ globalFormData }) => {
 
 
 
-            // Save the updated data to localStorage (or make additional API calls as needed)
-            const gridData = JSON.parse(localStorage.getItem("gridData")) || [];
-            const newGridData = [...gridData, { ...updatedFormData, id: uniqueID }];
-            localStorage.setItem("gridData", JSON.stringify(newGridData));
+            // // Save the updated data to localStorage (or make additional API calls as needed)
+            // const gridData = JSON.parse(localStorage.getItem("gridData")) || [];
+            // const newGridData = [...gridData, { ...updatedFormData, id: uniqueID }];
+            // localStorage.setItem("gridData", JSON.stringify(newGridData));
 
 
         } catch (error) {
             console.error('Error submitting form:', error);
             toast.error('Failed to submit data.');
         }
+
+        // setActiveTab("grid")
     };
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
 
-            <h2 className="text-2xl font-bold text-center mb-6">Vintage Wine Form</h2>
+            <h2 className="text-2xl font-bold text-center mb-6">GrapeBottle</h2>
             <form name='wineForm' onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -418,18 +431,25 @@ const Form = ({ globalFormData }) => {
                     className="w-full p-2 mb-4 border rounded"
                 />
 
-                {/* barcode is here */}
-                <div className="mb-4">
-                    <label htmlFor="barcode" className="block mb-2">Scan Barcode:</label>
-                    <BarcodeScanner onScan={handleBarcodeScan} />
+
+
+                <div className="mb-0">
+
                     <input
                         type="text"
                         name="barcode"
-                        placeholder="Scanned Barcode"
+                        placeholder='Barcode'
                         value={formData.barcode}
+                        onChange={handleBarcodeChange} // Allow editing
                         className="w-full p-2 mb-4 border rounded"
                     />
                 </div>
+
+                {/* Start Scanning Button */}
+
+
+                <BarcodeScanner onScan={handleBarcodeScan} />
+
 
 
 

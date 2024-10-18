@@ -1,4 +1,3 @@
-// Grid.js
 import React, { useState, useEffect } from 'react';
 import { AiOutlineEdit, AiOutlineDelete } from 'react-icons/ai'; // Import icons from react-icons
 import Popup from './Popup'; // Adjust the import path as needed
@@ -11,9 +10,6 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState(''); // State for search query
-    const gsheetApiUrl = process.env.REACT_APP_GSHEET_API_URL;
-    const dataBaseApiUrl = process.env.REACT_APP_GSHEET_API_URL;
-    const backendApiUrl = process.env.REACT_APP_GSHEET_API_URL;
 
     const fettcher = async () => {
         try {
@@ -39,23 +35,10 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
             const tempData = jsonData.Data;
 
             const newtempData = tempData.map((element) => {
-                console.log(element)
-
-                const newdata = JSON.parse(element.data)
-                const newObj = { ...newdata, id: element.id }
-                // const newObj = {
-                //     id: element.id,
-                //     data: JSON.parse(element.data)
-
-                // }
-                console.log("new obj")
-                console.log(newObj)
-                return newObj
-
-            }
-
-            );
-            console.log(newtempData)
+                const newdata = JSON.parse(element.data);
+                const newObj = { ...newdata, id: element.id };
+                return newObj;
+            });
 
             setGridData(newtempData);
         } catch (error) {
@@ -69,15 +52,10 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
 
     useEffect(() => {
         if (gridData?.length > 0) {
-            console.log(gridData)
             const results = gridData?.filter(item => {
-                console.log("itemishere")
-                console.log(item)
                 if (searchQuery === '') return true;
-                return item.item.toLowerCase().includes(searchQuery.toLowerCase())
-            }
-            );
-            console.log("result", results)
+                return item.item.toLowerCase().includes(searchQuery.toLowerCase());
+            });
             setFilteredData(results);
         }
     }, [searchQuery, gridData]);
@@ -93,38 +71,31 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
     };
 
     const handleEdit = (item) => {
-        // Add your edit logic here (e.g., open an edit form)
-        console.log('Edit item:', item);
-
-        setGlobalFormData(item)
-        setActiveTab("form")
-
-
+        setGlobalFormData(item);
+        setActiveTab("form");
     };
 
     const handleDelete = async (item) => {
-        // Add your delete logic here (e.g., remove item from gridData)
-        console.log('Delete item:', item);
-        console.log(item.id)
         await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
             headers: {
-                "Content-Type": "application/json" // Fixed the capitalization
+                "Content-Type": "application/json"
             },
-
             method: "POST",
-            body: JSON.stringify({ // Convert the body to a JSON string
+            body: JSON.stringify({
                 Mode: "Delete",
                 id: `${item.id}`,
                 itemData: ""
             })
-        }).then(res => {
-            toast.success("deleted success") // Ensure the promise is returned
-        }).catch(e => {
-            console.log(e.message)
-            toast.error("not deleted")
-        });
+        })
+            .then(res => {
+                toast.success("Deleted successfully");
+            })
+            .catch(e => {
+                console.log(e.message);
+                toast.error("Delete failed");
+            });
 
-        setGridData((prevData) => prevData.filter((data) => data !== item)); // Example delete logic
+        setGridData((prevData) => prevData.filter((data) => data !== item));
     };
 
     if (filteredData.length === 0) {
@@ -135,60 +106,46 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
             </>
         );
     }
-    console.log("filter data")
-    // console.log(filteredData)
-    filteredData.forEach((i) => console.log(i))
+
     return (
         <>
             <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-            <div className="flex items-center justify-center min-h-screen p-5">
-                <div className="grid xl:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4 max-w-6xl w-[200%] mt-4">
+            <div className={`flex ${filteredData?.length > 2 ? "items-center" : "items-start"} justify-center h-auto  p-5`}>
+                <div className="grid md:grid-cols-2 grid-cols-1 gap-4 max-w-6xl w-[200%] mt-4">
                     {filteredData.map((formData, index) => (
                         <div key={index} className="relative flex flex-col bg-white rounded-lg p-4 m-2 shadow-md shadow-blue-400">
 
-                            {formData?.photos && formData?.photos?.length > 0 ? (<>
-                                {/* {console.log("here")}
-                                {console.log(formData)}
-                                <div>{formData}</div> */}
-                                < div
+                            {formData?.photos && formData?.photos?.length > 0 ? (
+                                <div
                                     className="h-40 bg-gray-400 rounded-lg"
-                                    // src={formData.photos[0]}
                                     style={{
                                         backgroundImage: `url(${formData.photos[0]})`,
-                                        // backgroundImage: `url("https://drive.google.com/uc?export=view&id=13_8jVn2W1B35BV3m4T60hcizDHbInSV6")`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                     }}
                                 />
-
-                                {/* < img
-                                    className="h-40 bg-gray-400 rounded-lg"
-                                    src="https://drive.google.com/uc?export=view&id=13_8jVn2W1B35BV3m4T60hcizDHbInSV6"
-                                style={{
-                                    // backgroundImage: `url(${formData.photos[0]})`,
-                                    backgroundImage: `url(https://drive.google.com/file/d/13_8jVn2W1B35BV3m4T60hcizDHbInSV6/view?usp=drivesdk)`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                }}
-                                /> */}
-                            </>
-
                             ) : (
                                 <div className="h-40 bg-red-600 rounded-lg"></div>
                             )}
+
                             <div className="absolute top-2 right-2 flex space-x-2">
+                                {/* Edit button with yellow outline */}
                                 <button
-                                    className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full hover:bg-gray-400 transition"
+                                    className="flex items-center justify-center w-8 h-8 bg-white border border-yellow-500 rounded-full hover:bg-gray-400 transition"
                                     onClick={() => handleEdit(formData)}
                                 >
-                                    <AiOutlineEdit onClick={console.log(formData)} size={16} className="text-gray-800" />
+                                    <AiOutlineEdit size={16} color='#eab308' />
                                 </button>
+
+
+                                {/* Delete button with red outline */}
                                 <button
-                                    className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full hover:bg-gray-400 transition"
+                                    className="flex items-center justify-center w-8 h-8 bg-white border border-red-500 rounded-full hover:bg-gray-400 transition"
                                     onClick={() => handleDelete(formData)}
                                 >
-                                    <AiOutlineDelete size={16} className="text-gray-800" />
+                                    <AiOutlineDelete size={16} color='red' />
                                 </button>
+
                             </div>
                             <div className="flex flex-col items-center mt-4">
                                 <h4 className="text-xl font-semibold">{formData.item}</h4>
@@ -206,7 +163,6 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
                 </div>
 
                 {isPopupOpen && <Popup item={selectedItem} onClose={closePopup} />}
-
                 <ToastContainer />
             </div>
         </>

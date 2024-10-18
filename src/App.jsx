@@ -38,7 +38,7 @@ const App = () => {
 
             <div className="p-4">
                 {activeTab === 'form' ? (
-                    <Form globalFormData={globalFormData} />
+                    <Form globalFormData={globalFormData} setActiveTab={setActiveTab} />
                 ) : (
                     <Grid setActiveTab={setActiveTab} setGlobalFormData={setGlobalFormData} />
                 )}
