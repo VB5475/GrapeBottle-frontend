@@ -105,16 +105,16 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
     const handleDelete = async (item) => {
         // Add your delete logic here (e.g., remove item from gridData)
         console.log('Delete item:', item);
-
-        await fetch(dataBaseApiUrl, {
-            // headers: {
-            //     "Content-Type": "application/json" // Fixed the capitalization
-            // },
+        console.log(item.id)
+        await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
+            headers: {
+                "Content-Type": "application/json" // Fixed the capitalization
+            },
 
             method: "POST",
             body: JSON.stringify({ // Convert the body to a JSON string
                 Mode: "Delete",
-                id: item.id,
+                id: `${item.id}`,
                 itemData: ""
             })
         }).then(res => {
@@ -155,10 +155,23 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
                                     // src={formData.photos[0]}
                                     style={{
                                         backgroundImage: `url(${formData.photos[0]})`,
+                                        // backgroundImage: `url("https://drive.google.com/uc?export=view&id=13_8jVn2W1B35BV3m4T60hcizDHbInSV6")`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                     }}
-                                /></>
+                                />
+
+                                {/* < img
+                                    className="h-40 bg-gray-400 rounded-lg"
+                                    src="https://drive.google.com/uc?export=view&id=13_8jVn2W1B35BV3m4T60hcizDHbInSV6"
+                                style={{
+                                    // backgroundImage: `url(${formData.photos[0]})`,
+                                    backgroundImage: `url(https://drive.google.com/file/d/13_8jVn2W1B35BV3m4T60hcizDHbInSV6/view?usp=drivesdk)`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
+                                /> */}
+                            </>
 
                             ) : (
                                 <div className="h-40 bg-red-600 rounded-lg"></div>

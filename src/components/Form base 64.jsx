@@ -3,7 +3,6 @@ import axios from 'axios';
 import { nanoid } from 'nanoid'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import BarcodeScanner from '../BarcodeScanner/BarcodeScanner';
 
 const Form = ({ globalFormData }) => {
     const [isEdit, setIsEdit] = useState(false)
@@ -27,23 +26,18 @@ const Form = ({ globalFormData }) => {
         marketValue: '',
         lastTrade: '',
         photos: [],  // File objects
-        gDrivePhotos: [],
-        barcode: '', // Add a field for the barcode
     });
 
     const [imagePreviews, setImagePreviews] = useState([]);
     const [uploadedUrls, setUploadedUrls] = useState([]);  // Stores Cloudinary URLs
-    const [gDriveUploadedUrls, setGDriveUploadedUrls] = useState([]) // Stores Gdrive URLs
     const [isUploading, setIsUploading] = useState(false); // Track upload process
     const [isSubmitEnabled, setIsSubmitEnabled] = useState(false); // Track submit button state
     const [editTimePhotos, setEditTimePhotos] = useState([])
-    const [editTimeGDrivePhotos, setEditTimeGDrivePhotos] = useState([])
 
     useEffect(() => {
         if (globalFormData && Object.keys(globalFormData).length > 0) {
             if (globalFormData?.photos?.length > 0) setIsSubmitEnabled(true)
             setEditTimePhotos([...globalFormData.photos])
-            setEditTimeGDrivePhotos([...globalFormData.gDrivePhotos])
             setImagePreviews(globalFormData.photos)
             setFormData({ ...globalFormData, photos: [] })
 
@@ -72,11 +66,6 @@ const Form = ({ globalFormData }) => {
         setFormData({ ...formData, [name]: value });
     };
 
-    // barcode scan handler
-    const handleBarcodeScan = (barcode) => {
-        setFormData((prev) => ({ ...prev, barcode })); // Update the form data with the scanned barcode
-    };
-
     // Handle file input (multiple image uploads)
     const handleImageUpload = (event) => {
         const files = Array.from(event.target.files);
@@ -95,46 +84,56 @@ const Form = ({ globalFormData }) => {
 
     // Handle image upload to the backend
     const handleUploadImages = async () => {
+        console.log("ahi jo");
+        console.log(formData);
+        setIsUploading(true);
+
+        const urls = [];
+
+        // Function to convert a single photo to Base64 using Promise
+        const convertToBase64 = (photo) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onloadend = function () {
+                    const base64String = reader.result;
+                    resolve(base64String); // Resolve the promise with the Base64 string
+                };
+
+                reader.onerror = function (error) {
+                    reject(error); // Reject the promise in case of an error
+                };
+
+                reader.readAsDataURL(photo); // Read the file as a Data URL (Base64)
+            });
+        };
+
         try {
-            console.log("ahi jo")
-            console.log(formData)
-            setIsUploading(true);
-            const urls = [];
-            const gDriveUrls = []
-            for (const photo of formData.photos) {
-                const formDataToUpload = new FormData();
-                formDataToUpload.append('image', photo); // Append each image to the FormData
+            // Use Promise.all to wait for all Base64 conversions
+            const base64Strings = await Promise.all(
+                formData.photos.map((photo) => convertToBase64(photo))
+            );
 
-                // const response = await axios.post("https://wineapp-backend.onrender.com/upload", formDataToUpload, {
-                //     headers: { 'Content-Type': 'multipart/form-data' },
-                // });
-                const response = await axios.post("http://localhost:4000/upload", formDataToUpload, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+            base64Strings.forEach((base64String) => urls.push(base64String));
 
-                if (response.data.urls) {
-                    urls.push(response.data.urls.cloudinaryURL);  // Store Cloudinary URL
+            console.log("urls");
+            console.log(urls);
 
-                    console.log(response.data.urls.gDriveURL)
-                    gDriveUrls.push(response.data.urls.gDriveURL);
-                }
-            }
-
-            if (urls.length > 0 && gDriveUrls.length > 0) {
+            if (urls?.length > 0) {
                 setUploadedUrls(urls); // Save Cloudinary URLs
-                setGDriveUploadedUrls(gDriveUrls); // Save Gdrive URLs
                 setIsSubmitEnabled(true); // Enable the submit button
                 toast.success('Images uploaded successfully!');
             } else {
                 toast.error('Failed to upload images.');
             }
         } catch (error) {
-            console.error('Error uploading images:', error);
-            toast.error('Error uploading images.');
+            console.error("Error converting images:", error);
+            toast.error('Failed to upload images.');
         } finally {
-            setIsUploading(false); // Reset upload state
+            setIsUploading(false); // Stop uploading state regardless of success/failure
         }
     };
+
 
 
     async function test() {
@@ -142,16 +141,10 @@ const Form = ({ globalFormData }) => {
 
         const newForm = document.forms["wineForm"];
         const urlArray = [...uploadedUrls]
-        const gDriveUrlArray = [...gDriveUploadedUrls]
-        console.log("zara yaha pe")
-        console.log(gDriveUrlArray)
         const stringphotosUrls = urlArray.join(', ');
-        const stringDrivePhotosUrls = gDriveUrlArray.join(', ');
-        console.log("idhar bhai idhar")
-        console.log(stringDrivePhotosUrls)
+
         const tempFormData = new FormData(newForm);
         tempFormData.append("photos", stringphotosUrls)
-        tempFormData.append("gDrivePhotos", stringDrivePhotosUrls)
 
 
         // Print the contents of tempFormData
@@ -179,7 +172,6 @@ const Form = ({ globalFormData }) => {
         const updatedFormData = {
             ...formData,
             photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
-            gDrivePhotos: editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : gDriveUploadedUrls,
         };
         console.log("Form data with Cloudinary URLs:", updatedFormData);
         await test()
@@ -276,6 +268,7 @@ const Form = ({ globalFormData }) => {
 
                     className="w-full p-2 mb-4 border rounded"
                 />
+
                 <select
                     name="packaging"
                     value={formData.packaging}
@@ -287,6 +280,7 @@ const Form = ({ globalFormData }) => {
                     <option value="Individually">Individually</option>
                     <option value="Sealed Box">Sealed Box</option>
                 </select>
+
                 <select
                     name="condition"
                     value={formData.condition}
@@ -300,19 +294,15 @@ const Form = ({ globalFormData }) => {
                     <option value="Poor">Poor</option>
                 </select>
 
-
-                <select
+                <input
+                    type="text"
                     name="label"
+                    placeholder="Label"
                     value={formData.label}
                     onChange={handleChange}
 
                     className="w-full p-2 mb-4 border rounded"
-                >
-                    <option value="">Label</option>
-                    <option value="Pristine">Pristine</option>
-                    <option value="Good">Good</option>
-                    <option value="Poor">Poor</option>
-                </select>
+                />
 
                 <select
                     name="capsulesCorks"
@@ -346,7 +336,6 @@ const Form = ({ globalFormData }) => {
                     className="w-full p-2 mb-4 border rounded"
                 >
                     {/* <option value="">Bottle Fill Level</option> */}
-                    <option value="">Bottle Fill Level</option>
                     <option value="InNeck">In Neck (IN)</option>
                     <option value="BaseNeck">Base Neck (BN)</option>
                     <option value="VeryTopShoulder">Very Top Shoulder (VTS)</option>
@@ -417,22 +406,6 @@ const Form = ({ globalFormData }) => {
 
                     className="w-full p-2 mb-4 border rounded"
                 />
-
-                {/* barcode is here */}
-                <div className="mb-4">
-                    <label htmlFor="barcode" className="block mb-2">Scan Barcode:</label>
-                    <BarcodeScanner onScan={handleBarcodeScan} />
-                    <input
-                        type="text"
-                        name="barcode"
-                        placeholder="Scanned Barcode"
-                        value={formData.barcode}
-                        className="w-full p-2 mb-4 border rounded"
-                    />
-                </div>
-
-
-
                 {/* Input for photo upload */}
                 <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="w-full mb-4" />
 

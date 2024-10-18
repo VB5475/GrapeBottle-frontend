@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { nanoid } from 'nanoid'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const Form = () => {
+const Form = ({ globalFormData }) => {
+    const [isEdit, setIsEdit] = useState(false)
+
+
     const [formData, setFormData] = useState({
         item: '',
         vintage: '',
@@ -21,13 +26,33 @@ const Form = () => {
         marketValue: '',
         lastTrade: '',
         photos: [],  // File objects
+        gDrivePhotos: []
     });
 
     const [imagePreviews, setImagePreviews] = useState([]);
     const [uploadedUrls, setUploadedUrls] = useState([]);  // Stores Cloudinary URLs
+    const [gDriveUploadedUrls, setGDriveUploadedUrls] = useState([]) // Stores Gdrive URLs
     const [isUploading, setIsUploading] = useState(false); // Track upload process
     const [isSubmitEnabled, setIsSubmitEnabled] = useState(false); // Track submit button state
+    const [editTimePhotos, setEditTimePhotos] = useState([])
+    const [editTimeGDrivePhotos, setEditTimeGDrivePhotos] = useState([])
 
+    useEffect(() => {
+        if (globalFormData && Object.keys(globalFormData).length > 0) {
+            if (globalFormData?.photos?.length > 0) setIsSubmitEnabled(true)
+            setEditTimePhotos([...globalFormData.photos])
+            setEditTimeGDrivePhotos([...globalFormData.gDrivePhotos])
+            setImagePreviews(globalFormData.photos)
+            setFormData({ ...globalFormData, photos: [] })
+
+            setIsEdit(true)
+        }
+    }, [globalFormData])
+
+    const gsheetApiUrl = process.env.REACT_APP_GSHEET_API_URL;
+    const dataBaseApiUrl = process.env.REACT_APP_GSHEET_API_URL;
+    const backendApiUrl = process.env.REACT_APP_GSHEET_API_URL;
+    console.log(gsheetApiUrl)
     useEffect(() => {
         console.log(formData);
     }, [formData]);
@@ -48,6 +73,9 @@ const Form = () => {
     // Handle file input (multiple image uploads)
     const handleImageUpload = (event) => {
         const files = Array.from(event.target.files);
+        console.log("image files are here")
+        console.log(formData.photos)
+        console.log(files)
         const newImagePreviews = files.map(file => URL.createObjectURL(file));
 
         setFormData(prev => ({
@@ -61,31 +89,41 @@ const Form = () => {
     // Handle image upload to the backend
     const handleUploadImages = async () => {
         try {
+            console.log("ahi jo")
+            console.log(formData)
             setIsUploading(true);
             const urls = [];
+            const gDriveUrls = []
             for (const photo of formData.photos) {
                 const formDataToUpload = new FormData();
                 formDataToUpload.append('image', photo); // Append each image to the FormData
 
-                const response = await axios.post(, formDataToUpload, {
+                // const response = await axios.post("https://wineapp-backend.onrender.com/upload", formDataToUpload, {
+                //     headers: { 'Content-Type': 'multipart/form-data' },
+                // });
+                const response = await axios.post("http://localhost:4000/upload", formDataToUpload, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
 
-                if (response.data.url) {
-                    urls.push(response.data.url);  // Store Cloudinary URL
+                if (response.data.urls) {
+                    urls.push(response.data.urls.cloudinaryURL);  // Store Cloudinary URL
+
+                    console.log(response.data.urls.gDriveURL)
+                    gDriveUrls.push(response.data.urls.gDriveURL);
                 }
             }
 
-            if (urls.length > 0) {
+            if (urls.length > 0 && gDriveUrls.length > 0) {
                 setUploadedUrls(urls); // Save Cloudinary URLs
+                setGDriveUploadedUrls(gDriveUrls); // Save Gdrive URLs
                 setIsSubmitEnabled(true); // Enable the submit button
-                alert('Images uploaded successfully!');
+                toast.success('Images uploaded successfully!');
             } else {
-                alert('Failed to upload images.');
+                toast.error('Failed to upload images.');
             }
         } catch (error) {
             console.error('Error uploading images:', error);
-            alert('Error uploading images.');
+            toast.error('Error uploading images.');
         } finally {
             setIsUploading(false); // Reset upload state
         }
@@ -93,60 +131,99 @@ const Form = () => {
 
 
     async function test() {
+        console.log("test triggred")
 
-        const scriptURL =
-            "https://script.google.com/macros/s/AKfycbyMVtw_WHRPwodiABbCMe4EUZiZu-fN-XXpFDolHVFkvh6PyG3gIHOvjnNHauxw86zx/exec";
         const newForm = document.forms["wineForm"];
         const urlArray = [...uploadedUrls]
+        const gDriveUrlArray = [...gDriveUploadedUrls]
+        console.log("zara yaha pe")
+        console.log(gDriveUrlArray)
         const stringphotosUrls = urlArray.join(', ');
-
+        const stringDrivePhotosUrls = gDriveUrlArray.join(', ');
+        console.log("idhar bhai idhar")
+        console.log(stringDrivePhotosUrls)
         const tempFormData = new FormData(newForm);
         tempFormData.append("photos", stringphotosUrls)
+        tempFormData.append("gDrivePhotos", stringDrivePhotosUrls)
 
 
-        newForm.addEventListener("submit", (event) => {
-            event.preventDefault(); // Prevent the default form submission
-
-            fetch(scriptURL, { method: "POST", body: tempFormData })
-                .then((response) => {
-                    console.log(response)
-                    alert("Thanks for Contacting us..! We Will Contact You Soon...")
-                })
-                .catch((error) => console.error("Error!", error.message));
+        // Print the contents of tempFormData
+        tempFormData.forEach((value, key) => {
+            console.log(`${key}: ${value}`);
         });
+
+        fetch(gsheetApiUrl, { method: "POST", body: tempFormData })
+            .then((response) => {
+                console.log("trrigerd from here")
+                console.log(response)
+                toast.success("posted to excel")
+            })
+            .catch((error) => toast.error("failed to post at excel"));
+
+
     }
 
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const uniqueID = nanoid()
+        console.log("id is here ")
+        console.log(uniqueID)
+        const updatedFormData = {
+            ...formData,
+            photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
+            gDrivePhotos: editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : gDriveUploadedUrls,
+        };
+        console.log("Form data with Cloudinary URLs:", updatedFormData);
+        await test()
         try {
-            // Prepare the updated form data
-            const updatedFormData = {
-                ...formData,
-                photos: uploadedUrls, // Use Cloudinary URLs
-            };
 
-            // You can now use `updatedFormData` to save data to your localStorage or backend
-            console.log("Form data with Cloudinary URLs:", updatedFormData);
-            await test()
 
+            const stringForm = JSON.stringify(updatedFormData)
+            console.log("string form")
+            console.log(stringForm)
+            console.log("isediting")
+
+            console.log(formData.id)
+
+            await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
+                headers: {
+                    "Content-Type": "application/json" // Fixed the capitalization
+                },
+
+                method: "POST",
+                body: JSON.stringify({ // Convert the body to a JSON string
+                    Mode: isEdit ? "Update" : "Insert",
+                    id: isEdit ? `${formData.id}` : uniqueID,
+                    itemData: stringForm
+                })
+            }).then(res => {
+                return res.json(); // Ensure the promise is returned
+            }).then(newres => { // Added another then to handle the resolved promise
+                console.log(newres);
+                toast.success('Form submitted successfully!');
+            }).catch(e => {
+                console.log(e.message)
+                toast.error("data base error")
+            });
 
 
 
             // Save the updated data to localStorage (or make additional API calls as needed)
             const gridData = JSON.parse(localStorage.getItem("gridData")) || [];
-            const newGridData = [...gridData, updatedFormData];
+            const newGridData = [...gridData, { ...updatedFormData, id: uniqueID }];
             localStorage.setItem("gridData", JSON.stringify(newGridData));
 
-            alert('Form submitted successfully!');
+
         } catch (error) {
             console.error('Error submitting form:', error);
-            alert('Failed to submit data.');
+            toast.error('Failed to submit data.');
         }
     };
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+
             <h2 className="text-2xl font-bold text-center mb-6">Vintage Wine Form</h2>
             <form name='wineForm' onSubmit={handleSubmit}>
                 <input
@@ -192,7 +269,6 @@ const Form = () => {
 
                     className="w-full p-2 mb-4 border rounded"
                 />
-
                 <select
                     name="packaging"
                     value={formData.packaging}
@@ -204,7 +280,6 @@ const Form = () => {
                     <option value="Individually">Individually</option>
                     <option value="Sealed Box">Sealed Box</option>
                 </select>
-
                 <select
                     name="condition"
                     value={formData.condition}
@@ -218,15 +293,19 @@ const Form = () => {
                     <option value="Poor">Poor</option>
                 </select>
 
-                <input
-                    type="text"
+
+                <select
                     name="label"
-                    placeholder="Label"
                     value={formData.label}
                     onChange={handleChange}
 
                     className="w-full p-2 mb-4 border rounded"
-                />
+                >
+                    <option value="">Label</option>
+                    <option value="Pristine">Pristine</option>
+                    <option value="Good">Good</option>
+                    <option value="Poor">Poor</option>
+                </select>
 
                 <select
                     name="capsulesCorks"
@@ -260,6 +339,7 @@ const Form = () => {
                     className="w-full p-2 mb-4 border rounded"
                 >
                     {/* <option value="">Bottle Fill Level</option> */}
+                    <option value="">Bottle Fill Level</option>
                     <option value="InNeck">In Neck (IN)</option>
                     <option value="BaseNeck">Base Neck (BN)</option>
                     <option value="VeryTopShoulder">Very Top Shoulder (VTS)</option>
@@ -364,6 +444,7 @@ const Form = () => {
                     Submit
                 </button>
             </form>
+            <ToastContainer />
         </div>
     );
 };
