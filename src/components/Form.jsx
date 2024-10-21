@@ -255,8 +255,9 @@ const Form = ({ globalFormData, setActiveTab }) => {
     return (
         <div className="max-w-md mx-auto p-6 bg-gray-50 rounded-lg shadow-lg ">
             <div className='flex gap-x-1 justify-center items-center -mt-3 '>
-                <h2 className="text-2xl font-bold text-center mt-2 mb-4">GrapeBottle   </h2>
                 <img src={logo} alt="main logo" className='h-14   ' />
+                <h2 className="text-2xl font-bold text-center mt-2 mb-4">GrapeBottle   </h2>
+
             </div>
 
             <form name='wineForm' onSubmit={handleSubmit}>
