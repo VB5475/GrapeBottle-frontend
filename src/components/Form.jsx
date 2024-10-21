@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 // import BarcodeScanner from '../BarcodeScanner/BarcodeScanner';
 import BarcodeScanner from '../BarcodeScanner/BarcodeScanner2';
+import logo from "../../public/grapebottle.gif"
 
 
 const myUniqueID = nanoid()
@@ -229,6 +230,7 @@ const Form = ({ globalFormData, setActiveTab }) => {
                 setFormData(defaulFormData)
                 setImagePreviews([])
                 setIsSubmitEnabled(false)
+                document.querySelector('input[type="file"]').value = '';
             }).catch(e => {
                 console.log(e.message)
                 toast.error("data base error")
@@ -251,9 +253,12 @@ const Form = ({ globalFormData, setActiveTab }) => {
     };
 
     return (
-        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <div className="max-w-md mx-auto p-6 bg-gray-50 rounded-lg shadow-lg ">
+            <div className='flex gap-x-1 justify-center items-center -mt-3 '>
+                <h2 className="text-2xl font-bold text-center mt-2 mb-4">GrapeBottle   </h2>
+                <img src={logo} alt="main logo" className='h-14   ' />
+            </div>
 
-            <h2 className="text-2xl font-bold text-center mb-6">GrapeBottle</h2>
             <form name='wineForm' onSubmit={handleSubmit}>
                 <input
                     type="text"
