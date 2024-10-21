@@ -11,6 +11,43 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState(''); // State for search query
 
+
+    async function handleGsheetDelete(id) {
+
+        console.log("test triggred")
+
+
+
+        console.log("its triggered")
+        const tempFormData = new FormData();
+        tempFormData.append("uniqueID", id)
+        tempFormData.append("action", "delete")
+
+
+
+
+
+
+        // Print the contents of tempFormData
+        tempFormData.forEach((value, key) => {
+            console.log(`${key}: ${value}`);
+        });
+
+        fetch("https://script.google.com/macros/s/AKfycbzVtbNDnFq3_fKZ617i4Fnoqnzho6zB9k9p9worGPFiizHxHiuoSjtTXQaHn4O1j4Qa/exec", { method: "POST", body: tempFormData })
+            .then((response) => {
+                console.log("trrigerd from here")
+                console.log(response)
+                toast.success("deleted from excel")
+            })
+            .catch((error) => toast.error("failed to delete at excel"));
+
+
+
+    }
+
+
+
+
     const fettcher = async () => {
         try {
             const response = await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
@@ -76,6 +113,10 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
     };
 
     const handleDelete = async (item) => {
+
+        console.log("item is here")
+        console.log(item)
+
         await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
             headers: {
                 "Content-Type": "application/json"
@@ -87,13 +128,17 @@ const Grid = ({ setActiveTab, setGlobalFormData }) => {
                 itemData: ""
             })
         })
-            .then(res => {
+            .then(async res => {
+                await handleGsheetDelete(item.uniqueID)
                 toast.success("Deleted successfully");
             })
             .catch(e => {
                 console.log(e.message);
                 toast.error("Delete failed");
             });
+
+
+
 
         setGridData((prevData) => prevData.filter((data) => data !== item));
     };

@@ -6,8 +6,12 @@ import 'react-toastify/dist/ReactToastify.css';
 // import BarcodeScanner from '../BarcodeScanner/BarcodeScanner';
 import BarcodeScanner from '../BarcodeScanner/BarcodeScanner2';
 
+
+const myUniqueID = nanoid()
+
 const defaulFormData = {
-    id: nanoid(),
+    uniqueID: myUniqueID,
+    id: myUniqueID,
     item: '',
     vintage: '',
     size: '',
@@ -50,7 +54,7 @@ const Form = ({ globalFormData, setActiveTab }) => {
             setEditTimePhotos([...globalFormData.photos])
             setEditTimeGDrivePhotos([...globalFormData.gDrivePhotos])
             setImagePreviews(globalFormData.photos)
-            setFormData({ ...globalFormData, photos: [] })
+            setFormData({ ...globalFormData, photos: [], action: "edit" })
 
             setIsEdit(true)
         }
@@ -149,8 +153,8 @@ const Form = ({ globalFormData, setActiveTab }) => {
         console.log("test triggred")
 
         const newForm = document.forms["wineForm"];
-        const urlArray = [...uploadedUrls]
-        const gDriveUrlArray = [...gDriveUploadedUrls]
+        const urlArray = editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : [...uploadedUrls]
+        const gDriveUrlArray = editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : [...gDriveUploadedUrls]
         console.log("zara yaha pe")
         console.log(gDriveUrlArray)
         const stringphotosUrls = urlArray.join(', ');
@@ -160,6 +164,10 @@ const Form = ({ globalFormData, setActiveTab }) => {
         const tempFormData = new FormData(newForm);
         tempFormData.append("photos", stringphotosUrls)
         tempFormData.append("gDrivePhotos", stringDrivePhotosUrls)
+        tempFormData.append("action", isEdit ? "edit" : "add")
+        tempFormData.append("uniqueID", formData.uniqueID)
+
+
 
 
         // Print the contents of tempFormData
@@ -167,7 +175,7 @@ const Form = ({ globalFormData, setActiveTab }) => {
             console.log(`${key}: ${value}`);
         });
 
-        fetch(gsheetApiUrl, { method: "POST", body: tempFormData })
+        fetch("https://script.google.com/macros/s/AKfycbzVtbNDnFq3_fKZ617i4Fnoqnzho6zB9k9p9worGPFiizHxHiuoSjtTXQaHn4O1j4Qa/exec", { method: "POST", body: tempFormData })
             .then((response) => {
                 console.log("trrigerd from here")
                 console.log(response)
@@ -186,13 +194,14 @@ const Form = ({ globalFormData, setActiveTab }) => {
         // console.log(uniqueID)
         const updatedFormData = {
             ...formData,
+            // action: isEdit ? "edit" : "add",
             photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
             gDrivePhotos: editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : gDriveUploadedUrls,
         };
         console.log("Form data with Cloudinary URLs:", updatedFormData);
-        await test()
-        try {
 
+        try {
+            await test()
 
             const stringForm = JSON.stringify(updatedFormData)
             console.log("string form")
