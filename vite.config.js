@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.REACT_APP_GSHEET_API_URL': JSON.stringify(env.REACT_APP_GSHEET_API_URL),
       'process.env.REACT_APP_DATABSE_API_URL': JSON.stringify(env.REACT_APP_DATABSE_API_URL),
-      'process.env.REACT_APP_BACKEND_API_URL': JSON.stringify(env.REACT_APP_BACKEND_API_URL)
+      'process.env.REACT_APP_BACKEND_API_URL': JSON.stringify(env.REACT_APP_BACKEND_API_URL),
+      'process.env.REACT_APP_GSHEET_PUBLISH_URL': JSON.stringify(env.REACT_APP_GSHEET_PUBLISH_URL)
     },
     plugins: [react()],
   }

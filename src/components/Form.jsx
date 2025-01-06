@@ -32,10 +32,12 @@ const defaulFormData = {
     photos: [],
     gDrivePhotos: [],
     barcode: '',
+    currentMarketPrice: "",
+    verified: false
 }
 
 
-const Form = ({ globalFormData, setActiveTab }) => {
+const Form = ({ globalFormData, setActiveTab, gridData, setGridData }) => {
     const [isEdit, setIsEdit] = useState(false)
     const [isScanning, setIsScanning] = useState(false);
 
@@ -52,8 +54,9 @@ const Form = ({ globalFormData, setActiveTab }) => {
     useEffect(() => {
         if (globalFormData && Object.keys(globalFormData).length > 0) {
             if (globalFormData?.photos?.length > 0) setIsSubmitEnabled(true)
+            console.log("globalFormData:", globalFormData)
             setEditTimePhotos([...globalFormData.photos])
-            setEditTimeGDrivePhotos([...globalFormData.gDrivePhotos])
+            setEditTimeGDrivePhotos([...globalFormData.gphotos])
             setImagePreviews(globalFormData.photos)
             setFormData({ ...globalFormData, photos: [], action: "edit" })
 
@@ -148,6 +151,76 @@ const Form = ({ globalFormData, setActiveTab }) => {
             setIsUploading(false); // Reset upload state
         }
     };
+    function jsonToCsv(jsonArray) {
+        if (!Array.isArray(jsonArray) || jsonArray.length === 0) {
+            return ''; // Return an empty string for invalid or empty input
+        }
+
+        // Extract the headers from the keys of the first object
+        const headers = Object.keys(jsonArray[0]);
+
+        // Create the CSV string for the headers
+        const csvHeaders = headers.join(',');
+
+        // Map the JSON array to CSV rows
+        const csvRows = jsonArray.map(obj => {
+            return headers.map(header => {
+                const key = header.trim().toLowerCase().replace(/\s+/g, ''); // Match header normalization in the parser
+                let value = obj[key];
+
+                // Handle 'photos' or 'gphotos' fields by joining the array into a comma-separated string
+                if (Array.isArray(value)) {
+                    value = value.map(url => url.trim()).join(',');
+                }
+
+                // Wrap values in quotes if they contain commas, quotes, or newlines
+                if (typeof value === 'string' && /[",\n]/.test(value)) {
+                    value = `"${value.replace(/"/g, '""')}"`; // Escape double quotes by doubling them
+                }
+
+                return value ?? ''; // Ensure null or undefined values are converted to empty strings
+            }).join(',');
+        });
+
+        // Combine the headers and rows into the final CSV string
+        return [csvHeaders, ...csvRows].join('\n');
+    }
+
+
+    const poster = async (csvValue) => {
+        const link = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTDrsVCl3ZV5w5AevqJd_BaCz-ud8fUcX9-cCa7d-62fgIn1lMr_tocviRE2SAsb8UtOECmdwH2xAWD/pub?gid=0&single=true&output=csv";
+
+        if (!link) {
+            console.error("Environment variable REACT_APP_GSHEET_PUBLISH_URL is not set.");
+            return;
+        }
+
+        console.log("Fetching data from:", link);
+
+        try {
+            const response = await fetch(link, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(csvValue)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const rawData = await response;
+            console.log("rawData:", rawData)
+            // const jsonData = csvToJson(rawData)
+            // console.log("Fetched data:", jsonData);
+            // setGridData(jsonData)
+
+            // Handle the parsed data here, e.g., setState(rawData);
+        } catch (error) {
+            console.error("Error fetching data:", error.message);
+        }
+    };
 
 
     async function test() {
@@ -176,7 +249,7 @@ const Form = ({ globalFormData, setActiveTab }) => {
             console.log(`${key}: ${value}`);
         });
 
-        fetch("https://script.google.com/macros/s/AKfycbzVtbNDnFq3_fKZ617i4Fnoqnzho6zB9k9p9worGPFiizHxHiuoSjtTXQaHn4O1j4Qa/exec", { method: "POST", body: tempFormData })
+        fetch("https://script.google.com/macros/s/AKfycbzxtco7C36mXnJ5vhb0-YBviC6guoJY4X5NjcsTZv6G9pwUrQszLw3r5CF2l0Amwt4/exec", { method: "POST", body: tempFormData })
             .then((response) => {
                 console.log("trrigerd from here")
                 console.log(response)
@@ -197,44 +270,40 @@ const Form = ({ globalFormData, setActiveTab }) => {
             ...formData,
             // action: isEdit ? "edit" : "add",
             photos: editTimePhotos?.length > 0 ? [...editTimePhotos, ...uploadedUrls] : uploadedUrls, // Use Cloudinary URLs
-            gDrivePhotos: editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : gDriveUploadedUrls,
+            gphotos: editTimeGDrivePhotos?.length > 0 ? [...editTimeGDrivePhotos, ...gDriveUploadedUrls] : gDriveUploadedUrls,
         };
         console.log("Form data with Cloudinary URLs:", updatedFormData);
 
         try {
-            await test()
 
-            const stringForm = JSON.stringify(updatedFormData)
-            console.log("string form")
-            console.log(stringForm)
-            console.log("isediting")
+            if (!isEdit) {
+                await test()
+            }
+            else {
+                console.log('updatedFormData:', updatedFormData)
 
-            console.log(formData.id)
+                if (gridData?.length > 0) {
+                    const newGridData = gridData.map((data) => {
+                        if (data.uniqueid === updatedFormData.uniqueid) {
+                            return updatedFormData
+                        }
+                        else {
+                            return data
+                        }
+                    })
 
-            await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
-                headers: {
-                    "Content-Type": "application/json" // Fixed the capitalization
-                },
 
-                method: "POST",
-                body: JSON.stringify({ // Convert the body to a JSON string
-                    Mode: isEdit ? "Update" : "Insert",
-                    id: `${formData.id}`,
-                    itemData: stringForm
-                })
-            }).then(res => {
-                return res.json(); // Ensure the promise is returned
-            }).then(newres => { // Added another then to handle the resolved promise
-                console.log(newres);
-                toast.success('Form submitted successfully!');
-                setFormData(defaulFormData)
-                setImagePreviews([])
-                setIsSubmitEnabled(false)
-                document.querySelector('input[type="file"]').value = '';
-            }).catch(e => {
-                console.log(e.message)
-                toast.error("data base error")
-            });
+                    const csvGridData = jsonToCsv(newGridData)
+
+                    await poster(csvGridData)
+
+                }
+
+
+
+
+
+            }
 
 
 
@@ -267,8 +336,8 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     placeholder="Item"
                     value={formData.item}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
                 <input
                     type="text"
@@ -276,16 +345,15 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     placeholder="Vintage"
                     value={formData.vintage}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
-
                 <select
                     name="size"
                     value={formData.size}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Size</option>
                     <option value="375ml">375ml</option>
@@ -294,22 +362,21 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     <option value="1.5L">1.5L</option>
                     <option value="3L">3L</option>
                 </select>
-
                 <input
                     type="number"
                     name="qty"
                     placeholder="Qty"
                     value={formData.qty}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
                 <select
                     name="packaging"
                     value={formData.packaging}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Packaging</option>
                     <option value="Individually">Individually</option>
@@ -319,61 +386,62 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     name="condition"
                     value={formData.condition}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Condition</option>
                     <option value="Pristine">Pristine</option>
                     <option value="Good">Good</option>
                     <option value="Poor">Poor</option>
                 </select>
-
-
                 <select
                     name="label"
                     value={formData.label}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Label</option>
                     <option value="Pristine">Pristine</option>
                     <option value="Good">Good</option>
                     <option value="Poor">Poor</option>
                 </select>
-
                 <select
                     name="capsulesCorks"
                     value={formData.capsulesCorks}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Capsules/Corks</option>
                     <option value="New">Pristine</option>
                     <option value="Used">Good</option>
                     <option value="Damaged">Poor</option>
                 </select>
-
                 <input
                     type="text"
                     name="tempHumidity"
                     placeholder="Temp/Humidity"
                     value={formData.tempHumidity}
                     onChange={handleChange}
-
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
+                />
+                <input
+                    type="text"
+                    name="currentMarketPrice"
+                    placeholder="Current Market Price"
+                    value={formData.currentMarketPrice}
+                    onChange={handleChange}
                     className="w-full p-2 mb-4 border rounded"
                 />
-
                 <select
                     name="bottleFillLevel"
                     value={formData.bottleFillLevel}
                     onChange={handleChange}
-                    placeholder="select bottel level"
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
-                    {/* <option value="">Bottle Fill Level</option> */}
                     <option value="">Bottle Fill Level</option>
                     <option value="InNeck">In Neck (IN)</option>
                     <option value="BaseNeck">Base Neck (BN)</option>
@@ -383,95 +451,82 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     <option value="MidShoulder">Mid Shoulder (MS)</option>
                     <option value="LowShoulder">Low Shoulder (LS)</option>
                 </select>
-
                 <select
                     name="provenance"
                     value={formData.provenance}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    disabled={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 >
                     <option value="">Select Provenance</option>
-                    <option value="Region A">Documentation or NA(Not Available)</option>
-                    <option value="Region A">Receipt</option>
+                    <option value="Documentation">Documentation or NA (Not Available)</option>
+                    <option value="Receipt">Receipt</option>
                 </select>
-
                 <textarea
                     name="tastingNotes"
                     placeholder="Tasting Notes"
                     value={formData.tastingNotes}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                     rows="4"
                 />
-
                 <input
                     type="text"
                     name="lwin"
                     placeholder="LWIN #"
                     value={formData.lwin}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
-
                 <input
                     type="text"
                     name="boxId"
                     placeholder="Box ID #"
                     value={formData.boxId}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
-
                 <input
                     type="text"
                     name="marketValue"
                     placeholder="Market Value"
                     value={formData.marketValue}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
-
                 <input
                     type="text"
                     name="lastTrade"
                     placeholder="Last Trade"
                     value={formData.lastTrade}
                     onChange={handleChange}
-
-                    className="w-full p-2 mb-4 border rounded"
+                    readOnly={isEdit}
+                    className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                 />
-
-
-
                 <div className="mb-0">
-
                     <input
                         type="text"
                         name="barcode"
                         placeholder='Barcode'
                         value={formData.barcode}
-                        onChange={handleBarcodeChange} // Allow editing
-                        className="w-full p-2 mb-4 border rounded"
+                        onChange={handleBarcodeChange}
+                        readOnly={isEdit}
+                        className={`w-full p-2 mb-4 border rounded ${isEdit ? "bg-blue-100" : ""}`}
                     />
                 </div>
-
-                {/* Start Scanning Button */}
-
-
-                <BarcodeScanner onScan={handleBarcodeScan} />
-
-
-
-
-                {/* Input for photo upload */}
-                <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="w-full mb-4" />
-
-                {/* Display the selected images */}
+                {!isEdit && <BarcodeScanner onScan={handleBarcodeScan} />}
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={isEdit}
+                    className="w-full mb-4"
+                />
                 {imagePreviews.length > 0 && (
                     <div className="mb-4">
                         <h3 className="font-semibold">Selected Images:</h3>
@@ -482,18 +537,14 @@ const Form = ({ globalFormData, setActiveTab }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Upload Images Button */}
-                <button
+                {!isEdit && <button
                     type="button"
                     onClick={handleUploadImages}
                     disabled={isUploading || formData.photos.length === 0}
                     className={`w-full p-2 mb-4 ${isUploading ? 'bg-gray-400' : 'bg-green-600'} text-white rounded hover:bg-green-700`}
                 >
                     {isUploading ? 'Uploading...' : 'Upload Images'}
-                </button>
-
-                {/* Submit Button */}
+                </button>}
                 <button
                     type="submit"
                     disabled={!isSubmitEnabled}
@@ -502,6 +553,7 @@ const Form = ({ globalFormData, setActiveTab }) => {
                     Submit
                 </button>
             </form>
+
             <ToastContainer />
         </div>
     );
