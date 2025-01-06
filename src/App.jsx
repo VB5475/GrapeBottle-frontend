@@ -5,7 +5,7 @@ import Form from './components/Form';
 import Form2 from './components/Form2';
 import "./App.css"
 // import Form from './components/Form';
-
+// this is the old code 
 const App = () => {
     const [activeTab, setActiveTab] = useState('grid');
     const [globalFormData, setGlobalFormData] = useState({})
