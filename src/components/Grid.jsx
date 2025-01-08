@@ -204,7 +204,7 @@ const Grid = ({
                                     <strong>Size:</strong> {formData.Size || "N/A"}
                                 </p>
                                 <p className="text-sm">
-                                    <strong>Retail Price:</strong>{" "}
+                                    <strong>Original Retail Price:</strong>{" "}
                                     {formData["Original Market Value"] || "N/A"}
                                 </p>
                                 {formData["New Price"] && (

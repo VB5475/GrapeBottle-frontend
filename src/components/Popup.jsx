@@ -99,7 +99,7 @@ const Popup = ({ item, updateData, onClose, globalFormData, setGlobalFormData })
                                 <td className="bg-gray-50 border border-gray-200 py-3 px-4 text-center">{item.Size || "N/A"}</td>
                             </tr>
                             <tr>
-                                <td className="bg-white border border-gray-200 py-3 px-4 font-semibold text-center"> Retail Price</td>
+                                <td className="bg-white border border-gray-200 py-3 px-4 font-semibold text-center">Original Retail Price</td>
                                 <td className="bg-gray-50 border border-gray-200 py-3 px-4 text-center">
                                     {item["Original Market Value"] || "N/A"}
                                 </td>
