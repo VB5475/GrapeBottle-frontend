@@ -98,13 +98,13 @@ const Grid = ({ setActiveTab, setGlobalFormData, globalFormData, gridData, setGr
 
     const fettcher = async () => {
         try {
-            const response = await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleData", {
+            const response = await fetch("https://103.27.120.198/provioWS/webservice/Charts.asmx/GrapebottleWinesData", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    Mode: "Get",
+                    Mode: "GETALL",
                     id: "",
                     itemData: ""
                 })
@@ -118,25 +118,24 @@ const Grid = ({ setActiveTab, setGlobalFormData, globalFormData, gridData, setGr
             const data = JSON.parse(rawData);
             const jsonData = JSON.parse(data.d);
             const tempData = jsonData.Data;
+            console.log("-------->s")
+            console.log(tempData)
 
-            const newtempData = tempData.map((element) => {
-                const newdata = JSON.parse(element.data);
-                const newObj = { ...newdata, id: element.id };
-                return newObj;
-            });
-            console.log("newtempData:", newtempData)
-            setGridData(newtempData);
+          
+            // console.log("newtempData:", newtempData)
+            setGridData(tempData);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     };
 
     useEffect(() => {
-        // fettcher();
-        fettcher2()
+        fettcher();
+     //   fettcher2()
     }, []);
 
     useEffect(() => {
+
         if (gridData?.length > 0) {
             console.log("gridData:", gridData)
             const results = gridData?.filter(item => {
