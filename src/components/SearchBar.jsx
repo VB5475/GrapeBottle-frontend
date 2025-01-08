@@ -15,7 +15,7 @@ const SearchBar = ({ searchQuery, setSearchQuery }) => {
                     className="peer h-full w-full outline-none text-sm text-gray-700 pr-2"
                     type="text"
                     id="search"
-                    placeholder="Search something..."
+                    placeholder="Search Wine"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />

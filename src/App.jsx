@@ -97,32 +97,8 @@ const App = () => {
     return (<>
 
 
-        <div className="w-full max-w-md mx-auto mt-10 bg-white rounded-lg shadow-lg ">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 gap-2 ">
-                <button
-                    onClick={() => handleTabChange('form')}
-                    className={`flex-1 text-center py-2 rounded-lg transition-all ${activeTab === 'form' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
-                        }`}
-                >
-                    Form
-                </button>
-                <button
-                    onClick={() => handleTabChange('grid')}
-                    className={`flex-1 text-center py-2 rounded-lg transition-all ${activeTab === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
-                        }`}
-                >
-                    Grid
-                </button>
-
-            </div>
-
-            <div className="p-4">
-                {activeTab === 'form' ? (
-                    <Form globalFormData={globalFormData} setActiveTab={setActiveTab} gridData={gridData} setGridData={setGridData} />
-                ) : (
-                    <Grid setActiveTab={setActiveTab} setGlobalFormData={setGlobalFormData} globalFormData={globalFormData} gridData={gridData} setGridData={setGridData} fettcher2={fettcher2} />
-                )}
-            </div>
+        <div className="w-full max-w-md mx-auto  bg-white rounded-lg shadow-lg ">
+        <Grid setActiveTab={setActiveTab} setGlobalFormData={setGlobalFormData} globalFormData={globalFormData} gridData={gridData} setGridData={setGridData} fettcher2={fettcher2} />
         </div >
 
     </>
